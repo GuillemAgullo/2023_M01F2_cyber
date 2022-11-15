@@ -10,6 +10,8 @@ MSG=`nc -l $PORT`
 
 HANDSHAKE=`echo $MSG | cut -d " " -f 1`
 IP_CLIENT=`echo $MSG | cut -d " " -f 2`
+IP_CLIENT_MD5=`echo $MSG | cut -d " " -f 3`
+COMPROVACIO_MD5=`echo $IP_CLIENT | md5sum | cut -d " " -f 1`
 
 echo "(3) Send - Confirmación Handshake"
 
@@ -19,6 +21,11 @@ then
 	exit 1
 fi
 
+if [ "$IP_CLIENT_MD5" != "$COMPROVACIO_MD5" ]
+then
+	echo "KO_HMTP_MD5"
+	exit 1
+fi 
 echo "OK_HMTP" | nc $IP_CLIENT $PORT
 echo "(4) Listen"
 
@@ -45,5 +52,30 @@ nc -l $PORT > inbox/$FILE_NAME
 echo "(11) SEND - Confirmació recepció"
 
 echo "OK_DATA_RCPT" | nc $IP_CLIENT $PORT
+
+echo "(12) LISTEN - MD5 de los datos"
+
+MSG=`nc -l $PORT`
+
+PREFIX=`echo $MSG | cut -d " " -f 1`
+DATA_MD5=`echo $MSG | cut -d " " -f 2`
+
+if [ "$PREFIX" != "DATA_MD5" ]
+then
+	echo "KO_MD5_PREFIX" | nc $IP_CLIENT $PORT
+	exit 4
+fi
+
+FILE_MD5=`cat inbox/$FILE_NAME | md55sum | cut -d " " -f 1`
+
+if [ "$DATA_MD5" != "$FILE_MD5" ]
+then
+	echo "KO_DATA_MD5" | nc $IP_CLIENT $PORT
+	exit 5
+fi
+
+echo "OK_DATA_MD5" | nc $IP_CLIENT $PORT
+					
+echo "Fi de la recepció"
 
 exit 0 

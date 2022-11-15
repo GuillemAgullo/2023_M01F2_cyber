@@ -2,6 +2,7 @@
 
 IP_SERVER="localhost"
 IP_LOCAL="127.0.0.1"
+IP_MD5=`echo $IP_LOCAL | md5sum | cut -d " " -f 1`
 
 PORT="4242"
 
@@ -9,7 +10,7 @@ echo "Cliente HMTP"
 
 echo "(1) SEND - Enviando el Handshake"
 
-echo "GREEN_POWA $IP_LOCAL" | nc $IP_SERVER $PORT
+echo "GREEN_POWA $IP_LOCAL $IP_MD5" | nc $IP_SERVER $PORT
 
 echo "(2) LISTEN - Escuchando confirmación"
 
@@ -50,5 +51,22 @@ MSG=`nc -l $PORT`
 if [ "$MSG" != "OK DATA_RCPT" ]
 then
 	echo 
+fi
+
+echo "(13) SEND - Enviant el Hash del contingut del arxiu"
+
+DATA_MD5=`cat memes/$FILE_NAME | md5sum | cut -d " " -f 1`
+
+echo " DATA_MD5 $DATA_MD5" | nc $IP_CLIENT $PORT
+
+echo "(14) LISTEN - MD5 Comprobación"
+
+MSG=`nc -l $PORT`
+
+if  [ "$MSG" != "OK_DATA_MD5" ]
+then
+		echo "ERROR 4: MD5 incorrecto"
+		echo "Mensaje de error: $MSG"
+		exit 4
 fi
 exit 0
